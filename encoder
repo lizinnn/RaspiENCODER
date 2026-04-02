@@ -1,0 +1,45 @@
+import time
+import VL53L0X
+import RPi.GPIO as GPIO
+
+# --- CONFIG BOTÃO ---
+BOTAO = 17  # GPIO17 (muda se precisar)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BOTAO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# --- SENSOR ---
+tof = VL53L0X.VL53L0X()
+tof.start_ranging(VL53L0X.VL53L0X_LONG_RANGE_MODE)
+
+ultima_distancia = 0
+
+try: 
+    while True: 
+        distancia = tof.get_distance()  # em mm
+
+        if distancia > 0:
+            cm = distancia / 10
+            ultima_distancia = distancia
+            print("Objeto a %.1f mm (%.1f cm)" % (distancia, cm))
+        else: 
+            print("leitura invalida")
+
+        # --- VERIFICA BOTÃO ---
+        if GPIO.input(BOTAO) == GPIO.LOW:
+            print("\nBotão pressionado! Salvando última leitura...")
+
+            with open("distancia_salva.txt", "w") as f:
+                f.write(str(ultima_distancia))
+
+            print("Salvo:", ultima_distancia, "mm")
+            break  # para o programa
+
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("parando...")
+
+finally:
+    tof.stop_ranging()
+    GPIO.cleanup()
