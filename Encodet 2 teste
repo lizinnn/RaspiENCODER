@@ -1,0 +1,49 @@
+import time
+import VL53L0X
+import RPi.GPIO as GPIO
+
+BOTAO = 17
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BOTAO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+tof = VL53L0X.VL53L0X()
+tof.start_ranging(VL53L0X.VL53L0X_LONG_RANGE_MODE)
+
+ultima_distancia = None
+
+try: 
+    while True: 
+        distancia = tof.get_distance()
+
+        if distancia > 0:
+            cm = distancia / 10
+            ultima_distancia = distancia
+            print("Objeto a %.1f mm (%.1f cm)" % (distancia, cm))
+        else: 
+            print("leitura invalida")
+
+        # botão (SW do encoder!)
+        # tem que ser sw
+        if GPIO.input(BOTAO) == GPIO.LOW:
+            print("\nBotão pressionado!")
+
+            time.sleep(0.3)
+
+            if ultima_distancia is not None:
+                with open("distancia_salva.txt", "w") as f:
+                    f.write(str(ultima_distancia))
+                print("Salvo:", ultima_distancia, "mm")
+            else:
+                print("Nenhuma leitura válida ainda!")
+
+            break
+
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("parando...")
+
+finally:
+    tof.stop_ranging()
+    GPIO.cleanup()
