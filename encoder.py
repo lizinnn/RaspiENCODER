@@ -4,7 +4,7 @@ import time
 import VL53L0X
 import RPi.GPIO as GPIO
 
-BOTAO = 17
+BOTAO = 22
 ARQUIVO_TXT = "/home/pi/distancia_salva.txt"
 
 GPIO.setmode(GPIO.BCM)
@@ -13,7 +13,7 @@ GPIO.setup(BOTAO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 tof = VL53L0X.VL53L0X()
 tof.start_ranging(VL53L0X.VL53L0X_LONG_RANGE_MODE)
 
-ultima_distancia = None
+ultima_distancia_cm = None
 
 try:
     while True:
@@ -21,7 +21,7 @@ try:
 
         if distancia > 0 and distancia < 8190:
             cm = distancia / 10.0
-            ultima_distancia = distancia
+            ultima_distancia_cm = cm
             print("Objeto a %.1f mm (%.1f cm)" % (distancia, cm))
         else:
             print("Sem leitura")
@@ -32,13 +32,18 @@ try:
 
             time.sleep(0.3)
 
-            if ultima_distancia is not None:
+            distancia_clique = tof.get_distance()
+
+            if distancia_clique > 0 and distancia_clique < 8190:
+                cm_clique = distancia_clique / 10.0
+
                 arquivo = open(ARQUIVO_TXT, "w")
-                arquivo.write(str(ultima_distancia))
+                arquivo.write("%.1f" % cm_clique)
                 arquivo.close()
 
-                print("Salvo: %.1f mm" % ultima_distancia)
+                print("salvo: %.1f cm" % cm_clique)
                 print("Arquivo: %s" % ARQUIVO_TXT)
+
             else:
                 print("Nenhuma leitura valida para salvar")
 
